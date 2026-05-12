@@ -88,8 +88,11 @@ GraphicsPipeline::GraphicsPipeline(
 
     const bool is_rect_list = key.prim_type == AmdGpu::PrimitiveType::RectList;
     const bool is_quad_list = key.prim_type == AmdGpu::PrimitiveType::QuadList;
+    const bool is_quad_strip = key.prim_type == AmdGpu::PrimitiveType::QuadStrip;
     const vk::PipelineTessellationStateCreateInfo tessellation_state = {
-        .patchControlPoints = is_rect_list ? 3U : (is_quad_list ? 4U : key.patch_control_points),
+        .patchControlPoints = is_rect_list ? 3U
+        : (is_quad_list || is_quad_strip) ? 4U
+        : key.patch_control_points,
     };
 
     vk::StructureChain raster_chain = {
@@ -190,8 +193,10 @@ GraphicsPipeline::GraphicsPipeline(
             .module = modules[stage],
             .pName = "main",
         });
-    } else if (is_rect_list || is_quad_list) {
-        const auto type = is_quad_list ? AuxShaderType::QuadListTCS : AuxShaderType::RectListTCS;
+    } else if (is_rect_list || is_quad_list || is_quad_strip) {
+        const auto type = is_quad_list  ? AuxShaderType::QuadListTCS
+            : is_quad_strip ? AuxShaderType::QuadStripTCS
+            : AuxShaderType::RectListTCS;
         if (!preloading) {
             const auto& vs_info = runtime_infos[u32(Shader::LogicalStage::Vertex)].vs_info;
             const auto& fs_info = runtime_infos[u32(Shader::LogicalStage::Fragment)].fs_info;
@@ -210,7 +215,7 @@ GraphicsPipeline::GraphicsPipeline(
             .module = modules[stage],
             .pName = "main",
         });
-    } else if (is_rect_list || is_quad_list) {
+    } else if (is_rect_list || is_quad_list || is_quad_strip) {
         if (!preloading) {
             const auto& vs_info = runtime_infos[u32(Shader::LogicalStage::Vertex)].vs_info;
             const auto& fs_info = runtime_infos[u32(Shader::LogicalStage::Fragment)].fs_info;
