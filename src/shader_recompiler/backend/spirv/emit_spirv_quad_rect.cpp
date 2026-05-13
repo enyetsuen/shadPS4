@@ -180,35 +180,35 @@ struct QuadRectListEmitter : public Sirit::Module {
         const Id array_type{TypeArray(int_id, Int(4))};
         const Id values{ConstantComposite(array_type, Int(0), Int(1), Int(3), Int(2))};
         const Id indices{AddLocalVariable(TypePointer(spv::StorageClass::Function, array_type),
-            spv::StorageClass::Function, values)};
+                                          spv::StorageClass::Function, values)};
 
-            // Set passthrough tessellation factors
-            const Id output_float{TypePointer(spv::StorageClass::Output, float_id)};
-            for (int i = 0; i < 4; i++) {
-                const Id ptr{OpAccessChain(output_float, gl_tess_level_outer, Int(i))};
-                OpStore(ptr, float_one);
-            }
-            for (int i = 0; i < 2; i++) {
-                const Id ptr{OpAccessChain(output_float, gl_tess_level_inner, Int(i))};
-                OpStore(ptr, float_one);
-            }
+        // Set passthrough tessellation factors
+        const Id output_float{TypePointer(spv::StorageClass::Output, float_id)};
+        for (int i = 0; i < 4; i++) {
+            const Id ptr{OpAccessChain(output_float, gl_tess_level_outer, Int(i))};
+            OpStore(ptr, float_one);
+        }
+        for (int i = 0; i < 2; i++) {
+            const Id ptr{OpAccessChain(output_float, gl_tess_level_inner, Int(i))};
+            OpStore(ptr, float_one);
+        }
 
-            const Id input_vec4{TypePointer(spv::StorageClass::Input, vec4_id)};
-            const Id output_vec4{TypePointer(spv::StorageClass::Output, vec4_id)};
-            const Id func_int{TypePointer(spv::StorageClass::Function, int_id)};
-            const Id invocation_id{OpLoad(int_id, gl_invocation_id)};
-            const Id index{OpLoad(int_id, OpAccessChain(func_int, indices, invocation_id))};
+        const Id input_vec4{TypePointer(spv::StorageClass::Input, vec4_id)};
+        const Id output_vec4{TypePointer(spv::StorageClass::Output, vec4_id)};
+        const Id func_int{TypePointer(spv::StorageClass::Function, int_id)};
+        const Id invocation_id{OpLoad(int_id, gl_invocation_id)};
+        const Id index{OpLoad(int_id, OpAccessChain(func_int, indices, invocation_id))};
 
-            const Id in_position{OpLoad(vec4_id, OpAccessChain(input_vec4, gl_in, index, Int(0)))};
-            OpStore(OpAccessChain(output_vec4, gl_out, invocation_id, Int(0)), in_position);
+        const Id in_position{OpLoad(vec4_id, OpAccessChain(input_vec4, gl_in, index, Int(0)))};
+        OpStore(OpAccessChain(output_vec4, gl_out, invocation_id, Int(0)), in_position);
 
-            for (int i = 0; i < inputs.size(); i++) {
-                const Id in_param{OpLoad(vec4_id, OpAccessChain(input_vec4, inputs[i], index))};
-                OpStore(OpAccessChain(output_vec4, outputs[i], invocation_id), in_param);
-            }
+        for (int i = 0; i < inputs.size(); i++) {
+            const Id in_param{OpLoad(vec4_id, OpAccessChain(input_vec4, inputs[i], index))};
+            OpStore(OpAccessChain(output_vec4, outputs[i], invocation_id), in_param);
+        }
 
-            OpReturn();
-            OpFunctionEnd();
+        OpReturn();
+        OpFunctionEnd();
     }
 
     /// Emits a passthrough quad tessellation evaluation shader that outputs 4 control points.
