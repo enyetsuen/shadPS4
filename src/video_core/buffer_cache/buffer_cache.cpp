@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <vk_mem_alloc.h> // for vmaInvalidateAllocation
 #include <algorithm>
 #include "common/alignment.h"
 #include "common/debug.h"
@@ -122,8 +123,37 @@ void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
     download_buffer.Commit();
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
+
+    // Warning! This was only tested for Last of Us!
+    if (auto barrier =
+            buffer.GetBarrier(vk::AccessFlagBits2::eTransferRead,
+                              vk::PipelineStageFlagBits2::eTransfer)) {
+        cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+            .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+            .bufferMemoryBarrierCount = 1,
+            .pBufferMemoryBarriers = &*barrier,
+        });
+    }
     cmdbuf.copyBuffer(buffer.buffer, download_buffer.Handle(), copies);
+    const vk::BufferMemoryBarrier2 readback_barrier = {
+        .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
+        .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
+        .dstStageMask = vk::PipelineStageFlagBits2::eHost,
+        .dstAccessMask = vk::AccessFlagBits2::eHostRead,
+        .buffer = download_buffer.Handle(),
+        .offset = offset,
+        .size = total_size_bytes,
+    };
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+        .bufferMemoryBarrierCount = 1,
+        .pBufferMemoryBarriers = &readback_barrier,
+    });
     const auto write_data = [&]() {
+        if (!download_buffer.is_coherent) {
+            vmaInvalidateAllocation(instance.GetAllocator(), download_buffer.buffer.allocation,
+                                    offset, total_size_bytes);
+        }
         auto* memory = Core::Memory::Instance();
         for (const auto& copy : copies) {
             const VAddr copy_device_addr = buffer.CpuAddr() + copy.srcOffset;
