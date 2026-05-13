@@ -1463,7 +1463,7 @@ s32 PS4_SYSV_ABI sceGnmSetEmbeddedPsShader(u32* cmdbuf, u32 size, u32 shader_id,
 
     constexpr static std::array ps1_code alignas(256) = {
         0xbeeb03ffu, 0x00000003u, // s_mov_b32     vcc_hi, $0x00000003
-        0x7e040280u,              // v_mov_b32     v2, 0 
+        0x7e040280u,              // v_mov_b32     v2, 0
         0xf8001803u, 0x02020202u, // exp           mrt0, v2, v2, off, off vm done
         0xbf810000u,              // s_endpgm
 
