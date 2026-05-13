@@ -125,15 +125,23 @@ void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
 
-    // Warning! This was only tested for Last of Us!
-    if (auto barrier = buffer.GetBarrier(vk::AccessFlagBits2::eTransferRead,
-                                         vk::PipelineStageFlagBits2::eTransfer)) {
-        cmdbuf.pipelineBarrier2(vk::DependencyInfo{
-            .dependencyFlags = vk::DependencyFlagBits::eByRegion,
-            .bufferMemoryBarrierCount = 1,
-            .pBufferMemoryBarriers = &*barrier,
-        });
-    }
+    const vk::BufferMemoryBarrier2 source_barrier = {
+        .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+        .srcAccessMask = vk::AccessFlagBits2::eMemoryWrite,
+        .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
+        .dstAccessMask = vk::AccessFlagBits2::eTransferRead,
+        .buffer = buffer.Handle(),
+        .offset = 0,
+        .size = buffer.SizeBytes(),
+    };
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+        .bufferMemoryBarrierCount = 1,
+        .pBufferMemoryBarriers = &source_barrier,
+    });
+    buffer.access_mask = vk::AccessFlagBits2::eTransferRead;
+    buffer.stage = vk::PipelineStageFlagBits2::eTransfer;
+
     cmdbuf.copyBuffer(buffer.buffer, download_buffer.Handle(), copies);
     const vk::BufferMemoryBarrier2 readback_barrier = {
         .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
