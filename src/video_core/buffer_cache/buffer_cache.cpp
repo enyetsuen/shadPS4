@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <vk_mem_alloc.h> // for vmaInvalidateAllocation
 #include <algorithm>
 #include "common/alignment.h"
 #include "common/debug.h"
@@ -14,6 +13,8 @@
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/texture_cache.h"
+
+#include <vk_mem_alloc.h>
 
 namespace VideoCore {
 
@@ -125,9 +126,8 @@ void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
     const auto cmdbuf = scheduler.CommandBuffer();
 
     // Warning! This was only tested for Last of Us!
-    if (auto barrier =
-            buffer.GetBarrier(vk::AccessFlagBits2::eTransferRead,
-                              vk::PipelineStageFlagBits2::eTransfer)) {
+    if (auto barrier = buffer.GetBarrier(vk::AccessFlagBits2::eTransferRead,
+                                         vk::PipelineStageFlagBits2::eTransfer)) {
         cmdbuf.pipelineBarrier2(vk::DependencyInfo{
             .dependencyFlags = vk::DependencyFlagBits::eByRegion,
             .bufferMemoryBarrierCount = 1,
