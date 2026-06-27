@@ -124,6 +124,8 @@ std::map<s32, std::string> ExtractTrophies(const std::filesystem::path& npbind_p
         LOG_WARNING(Common_Filesystem, "No NPCommIDs in npbind.dat");
         return trophy_index_map;
     }
+    auto& game_info = Common::ElfInfo::Instance();
+    game_info.SetNpCommIds(np_comm_ids);
 
     if (!std::filesystem::exists(trophy_dir)) {
         LOG_WARNING(Common_Filesystem, "Game does not contain a trophy directory");
@@ -429,6 +431,9 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
                                                    window_title);
 
     g_window = window.get();
+
+    std::filesystem::path icon_path = mnt->GetHostPath("/app0/sce_sys/icon0.png");
+    window->SetIcon(icon_path);
 
     const auto& mount_data_dir = Common::FS::GetUserPath(Common::FS::PathType::GameDataDir);
     mnt->Mount(mount_data_dir, "/data");

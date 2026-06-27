@@ -131,9 +131,11 @@ std::unordered_map<std::string_view, std::shared_ptr<spdlog::logger>> ALL_LOGGER
     {Class::Lib_Zlib, nullptr},
     {Class::Loader, nullptr},
     {Class::Log, nullptr},
+    {Class::NpHandler, nullptr},
     {Class::Render, nullptr},
     {Class::Render_Recompiler, nullptr},
     {Class::Render_Vulkan, nullptr},
+    {Class::ShadNet, nullptr},
     {Class::Tty, nullptr},
 };
 
@@ -184,6 +186,7 @@ void Setup(std::string_view shadps4_filename) {
 
     for (auto& [name, logger] : ALL_LOGGERS) {
         logger = std::make_shared<spdlog::logger>(std::string(name));
+        logger->set_level(spdlog::level::trace);
     }
 
     // Setup console
@@ -209,7 +212,6 @@ void Setup(std::string_view shadps4_filename) {
     g_shad_file_sink->set_pattern("%^%v%$");
 
     UpdateSinks();
-    UpdateLogLevels(EmulatorSettings.GetLogFilter());
 }
 
 void Switch(std::string_view game_filename) {
